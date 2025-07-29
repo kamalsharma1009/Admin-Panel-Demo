@@ -10,6 +10,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Flatpickr (for date/time selection) -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <!-- Chart.js for graphs -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- Custom CSS -->
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
@@ -31,6 +33,7 @@
         .card-hover:hover {
             transform: translateY(-5px);
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease-in-out;
         }
         
         .loyalty-badge {
@@ -47,6 +50,23 @@
             border-bottom: 3px solid #4f46e5;
             color: #4f46e5;
             font-weight: 500;
+        }
+        
+        .chart-container {
+            animation: fadeIn 1s ease-in-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .metric-card {
+            transition: all 0.3s ease;
+        }
+        
+        .metric-card:hover {
+            transform: scale(1.05);
         }
     </style>
 </head>
@@ -94,7 +114,7 @@
         <!-- Main Content -->
         <div class="flex-1 flex flex-col overflow-hidden">
             <!-- Top Navigation (Same as Dashboard) -->
-            <header class="bg-white shadow-sm z-10">
+            <header class="bg-white shadow-sm z-10 overflow-x-auto">
                 <div class="flex items-center justify-between px-4 py-3">
                     <div class="flex items-center">
                         <button class="md:hidden text-gray-500 focus:outline-none" onclick="toggleSidebar()">
@@ -164,8 +184,8 @@
                 <!-- Loyalty Programs Tab Content -->
                 <div id="loyalty-content" class="space-y-6">
                     <!-- Loyalty Overview -->
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div class="bg-white rounded-lg shadow p-6 card-hover transition duration-300">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div class="metric-card bg-white rounded-lg shadow p-6 card-hover transition duration-300">
                             <div class="flex items-center justify-between">
                                 <h3 class="text-lg font-semibold">Active Members</h3>
                                 <span class="loyalty-badge bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-sm">Premium</span>
@@ -176,7 +196,7 @@
                                 View Details <i class="fas fa-arrow-right ml-1"></i>
                             </button>
                         </div>
-                        <div class="bg-white rounded-lg shadow p-6 card-hover transition duration-300">
+                        <div class="metric-card bg-white rounded-lg shadow p-6 card-hover transition duration-300">
                             <div class="flex items-center justify-between">
                                 <h3 class="text-lg font-semibold">Points Redeemed</h3>
                                 <span class="loyalty-badge bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm">This Month</span>
@@ -187,7 +207,7 @@
                                 View Details <i class="fas fa-arrow-right ml-1"></i>
                             </button>
                         </div>
-                        <div class="bg-white rounded-lg shadow p-6 card-hover transition duration-300">
+                        <div class="metric-card bg-white rounded-lg shadow p-6 card-hover transition duration-300">
                             <div class="flex items-center justify-between">
                                 <h3 class="text-lg font-semibold">Tiers Achieved</h3>
                                 <span class="loyalty-badge bg-green-100 text-green-800 px-2 py-1 rounded-full text-sm">Upgrades</span>
@@ -198,6 +218,23 @@
                                 View Details <i class="fas fa-arrow-right ml-1"></i>
                             </button>
                         </div>
+                        <div class="metric-card bg-white rounded-lg shadow p-6 card-hover transition duration-300">
+                            <div class="flex items-center justify-between">
+                                <h3 class="text-lg font-semibold">Retention Rate</h3>
+                                <span class="loyalty-badge bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-sm">Loyalty Impact</span>
+                            </div>
+                            <p class="text-3xl font-bold mt-2">68%</p>
+                            <p class="text-sm text-gray-500 mt-1">Improved by loyalty programs[1][6]</p>
+                            <button class="mt-4 text-indigo-600 hover:text-indigo-800 text-sm font-medium" onclick="showLoyaltyDetails('retention')">
+                                View Details <i class="fas fa-arrow-right ml-1"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Loyalty Points Distribution Graph -->
+                    <div class="bg-white rounded-lg shadow p-6 card-hover transition duration-300 chart-container">
+                        <h3 class="text-lg font-semibold mb-4">Loyalty Points Distribution</h3>
+                        <canvas id="loyaltyPointsChart"></canvas>
                     </div>
                     
                     <!-- Loyalty Rules -->
@@ -244,6 +281,18 @@
                                             <a href="#" class="text-gray-600 hover:text-gray-900">Disable</a>
                                         </td>
                                     </tr>
+                                    <tr class="hover:bg-gray-50">
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Referral Bonus</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">500 points per referral</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">All Tiers</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <span class="loyalty-badge px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Active</span>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                            <a href="#" class="text-indigo-600 hover:text-indigo-900 mr-3">Edit</a>
+                                            <a href="#" class="text-gray-600 hover:text-gray-900">Disable</a>
+                                        </td>
+                                    </tr>
                                 </tbody>
                             </table>
                         </div>
@@ -253,22 +302,33 @@
                 <!-- Automated Campaigns Tab Content (Hidden by default) -->
                 <div id="campaigns-content" class="hidden space-y-6">
                     <!-- Campaign Overview -->
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div class="bg-white rounded-lg shadow p-6 card-hover transition duration-300">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div class="metric-card bg-white rounded-lg shadow p-6 card-hover transition duration-300">
                             <h3 class="text-lg font-semibold">Email Campaigns</h3>
                             <p class="text-3xl font-bold mt-2">45%</p>
                             <p class="text-sm text-gray-500 mt-1">Average open rate[6][10]</p>
                         </div>
-                        <div class="bg-white rounded-lg shadow p-6 card-hover transition duration-300">
+                        <div class="metric-card bg-white rounded-lg shadow p-6 card-hover transition duration-300">
                             <h3 class="text-lg font-semibold">WhatsApp Integrations</h3>
                             <p class="text-3xl font-bold mt-2">2.78B</p>
                             <p class="text-sm text-gray-500 mt-1">Global users[6][18]</p>
                         </div>
-                        <div class="bg-white rounded-lg shadow p-6 card-hover transition duration-300">
+                        <div class="metric-card bg-white rounded-lg shadow p-6 card-hover transition duration-300">
                             <h3 class="text-lg font-semibold">Automation ROI</h3>
                             <p class="text-3xl font-bold mt-2">48%</p>
                             <p class="text-sm text-gray-500 mt-1">More likely to surpass revenue goals[14]</p>
                         </div>
+                        <div class="metric-card bg-white rounded-lg shadow p-6 card-hover transition duration-300">
+                            <h3 class="text-lg font-semibold">Conversion Rate</h3>
+                            <p class="text-3xl font-bold mt-2">35%</p>
+                            <p class="text-sm text-gray-500 mt-1">From automated campaigns[6]</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Campaign Performance Graph -->
+                    <div class="bg-white rounded-lg shadow p-6 card-hover transition duration-300 chart-container">
+                        <h3 class="text-lg font-semibold mb-4">Campaign Performance Trend</h3>
+                        <canvas id="campaignPerformanceChart"></canvas>
                     </div>
                     
                     <!-- Campaign List -->
@@ -307,6 +367,17 @@
                                             <a href="#" class="text-indigo-600 hover:text-indigo-900 mr-3" onclick="showCampaignDetails('loyalty-reminder')">View</a>
                                         </td>
                                     </tr>
+                                    <tr class="hover:bg-gray-50">
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Holiday Promotion</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Email</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Active</span>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">28% Open Rate[6]</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                            <a href="#" class="text-indigo-600 hover:text-indigo-900 mr-3" onclick="showCampaignDetails('holiday-promotion')">View</a>
+                                        </td>
+                                    </tr>
                                 </tbody>
                             </table>
                         </div>
@@ -316,22 +387,33 @@
                 <!-- Influencer/Referral Tracking Tab Content (Hidden by default) -->
                 <div id="influencer-content" class="hidden space-y-6">
                     <!-- Influencer Overview -->
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div class="bg-white rounded-lg shadow p-6 card-hover transition duration-300">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div class="metric-card bg-white rounded-lg shadow p-6 card-hover transition duration-300">
                             <h3 class="text-lg font-semibold">Active Influencers</h3>
                             <p class="text-3xl font-bold mt-2">156</p>
                             <p class="text-sm text-gray-500 mt-1">Tracked via platforms like HypeAuditor[11]</p>
                         </div>
-                        <div class="bg-white rounded-lg shadow p-6 card-hover transition duration-300">
+                        <div class="metric-card bg-white rounded-lg shadow p-6 card-hover transition duration-300">
                             <h3 class="text-lg font-semibold">Referral Conversions</h3>
                             <p class="text-3xl font-bold mt-2">2,345</p>
                             <p class="text-sm text-gray-500 mt-1">From tracked referrals[7][15]</p>
                         </div>
-                        <div class="bg-white rounded-lg shadow p-6 card-hover transition duration-300">
+                        <div class="metric-card bg-white rounded-lg shadow p-6 card-hover transition duration-300">
                             <h3 class="text-lg font-semibold">ROI Increase</h3>
                             <p class="text-3xl font-bold mt-2">136%</p>
                             <p class="text-sm text-gray-500 mt-1">Higher conversion rates[7]</p>
                         </div>
+                        <div class="metric-card bg-white rounded-lg shadow p-6 card-hover transition duration-300">
+                            <h3 class="text-lg font-semibold">Engagement Rate</h3>
+                            <p class="text-3xl font-bold mt-2">45%</p>
+                            <p class="text-sm text-gray-500 mt-1">Average across campaigns[11]</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Influencer Performance Graph -->
+                    <div class="bg-white rounded-lg shadow p-6 card-hover transition duration-300 chart-container">
+                        <h3 class="text-lg font-semibold mb-4">Influencer Engagement Trend</h3>
+                        <canvas id="influencerEngagementChart"></canvas>
                     </div>
                     
                     <!-- Influencer List -->
@@ -366,6 +448,15 @@
                                             <a href="#" class="text-indigo-600 hover:text-indigo-900" onclick="showInfluencerDetails('styleicon')">View</a>
                                         </td>
                                     </tr>
+                                    <tr class="hover:bg-gray-50">
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">TrendSetter</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">YouTube</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">567</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">40% Engagement[11]</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                            <a href="#" class="text-indigo-600 hover:text-indigo-900" onclick="showInfluencerDetails('trendsetter')">View</a>
+                                        </td>
+                                    </tr>
                                 </tbody>
                             </table>
                         </div>
@@ -375,22 +466,33 @@
                 <!-- AI Recommendations Tab Content (Hidden by default) -->
                 <div id="recommendations-content" class="hidden space-y-6">
                     <!-- AI Overview -->
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div class="bg-white rounded-lg shadow p-6 card-hover transition duration-300">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div class="metric-card bg-white rounded-lg shadow p-6 card-hover transition duration-300">
                             <h3 class="text-lg font-semibold">Revenue Increase</h3>
                             <p class="text-3xl font-bold mt-2">35%</p>
                             <p class="text-sm text-gray-500 mt-1">From personalized recommendations[8][12]</p>
                         </div>
-                        <div class="bg-white rounded-lg shadow p-6 card-hover transition duration-300">
+                        <div class="metric-card bg-white rounded-lg shadow p-6 card-hover transition duration-300">
                             <h3 class="text-lg font-semibold">Conversion Boost</h3>
                             <p class="text-3xl font-bold mt-2">4.5x</p>
                             <p class="text-sm text-gray-500 mt-1">Higher conversions[8][16]</p>
                         </div>
-                        <div class="bg-white rounded-lg shadow p-6 card-hover transition duration-300">
+                        <div class="metric-card bg-white rounded-lg shadow p-6 card-hover transition duration-300">
                             <h3 class="text-lg font-semibold">Order Value</h3>
                             <p class="text-3xl font-bold mt-2">31%</p>
                             <p class="text-sm text-gray-500 mt-1">Higher AOV[8][20]</p>
                         </div>
+                        <div class="metric-card bg-white rounded-lg shadow p-6 card-hover transition duration-300">
+                            <h3 class="text-lg font-semibold">Personalization Rate</h3>
+                            <p class="text-3xl font-bold mt-2">92%</p>
+                            <p class="text-sm text-gray-500 mt-1">Businesses investing in AI[16]</p>
+                        </div>
+                    </div>
+                    
+                    <!-- AI Recommendation Performance Graph -->
+                    <div class="bg-white rounded-lg shadow p-6 card-hover transition duration-300 chart-container">
+                        <h3 class="text-lg font-semibold mb-4">AI Recommendation Impact</h3>
+                        <canvas id="aiRecommendationChart"></canvas>
                     </div>
                     
                     <!-- Recommendation Rules -->
@@ -429,6 +531,18 @@
                                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Cross-Sell Similar</td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">AI Cross-Selling</td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">47% Faster Purchases[12]</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <span class="loyalty-badge px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Active</span>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                            <a href="#" class="text-indigo-600 hover:text-indigo-900 mr-3">Edit</a>
+                                            <a href="#" class="text-gray-600 hover:text-gray-900">Disable</a>
+                                        </td>
+                                    </tr>
+                                    <tr class="hover:bg-gray-50">
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Personalized Bundles</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">AI Bundling</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">30% Revenue Boost[8]</td>
                                         <td class="px-6 py-4 whitespace-nowrap">
                                             <span class="loyalty-badge px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Active</span>
                                         </td>
@@ -689,7 +803,7 @@
             }, 3000);
         }
 
-        // Initialize date pickers
+        // Initialize date pickers and charts
         document.addEventListener('DOMContentLoaded', function() {
             flatpickr(".datepicker", {
                 dateFormat: "Y-m-d H:i",
@@ -703,6 +817,89 @@
             // User menu toggle
             document.getElementById('user-menu-button').addEventListener('click', function() {
                 document.getElementById('user-menu').classList.toggle('hidden');
+            });
+
+            // Sample Chart for Loyalty Points
+            const loyaltyCtx = document.getElementById('loyaltyPointsChart').getContext('2d');
+            const loyaltyPointsChart = new Chart(loyaltyCtx, {
+                type: 'pie',
+                data: {
+                    labels: ['VIP', 'Regular', 'New'],
+                    datasets: [{
+                        data: [40, 35, 25],
+                        backgroundColor: ['#4f46e5', '#7c3aed', '#a855f7']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    animation: {
+                        duration: 2000,
+                        easing: 'easeInOutCubic'
+                    }
+                }
+            });
+
+            // Sample Chart for Campaign Performance
+            const campaignCtx = document.getElementById('campaignPerformanceChart').getContext('2d');
+            const campaignPerformanceChart = new Chart(campaignCtx, {
+                type: 'line',
+                data: {
+                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'],
+                    datasets: [{
+                        label: 'Conversions',
+                        data: [1200, 1500, 1300, 1800, 1600, 2000, 2200],
+                        borderColor: 'rgb(75, 192, 192)',
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    animation: {
+                        duration: 1500,
+                        easing: 'easeOutBounce'
+                    }
+                }
+            });
+
+            // Sample Chart for Influencer Engagement
+            const influencerCtx = document.getElementById('influencerEngagementChart').getContext('2d');
+            const influencerEngagementChart = new Chart(influencerCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Instagram', 'TikTok', 'YouTube'],
+                    datasets: [{
+                        label: 'Engagement Rate',
+                        data: [45, 31, 40],
+                        backgroundColor: ['rgba(75, 192, 192, 0.6)', 'rgba(255, 159, 64, 0.6)', 'rgba(153, 102, 255, 0.6)']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    animation: {
+                        duration: 1500,
+                        easing: 'easeOutBounce'
+                    }
+                }
+            });
+
+            // Sample Chart for AI Recommendations
+            const aiCtx = document.getElementById('aiRecommendationChart').getContext('2d');
+            const aiRecommendationChart = new Chart(aiCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Revenue Increase', 'Conversion Boost', 'Order Value'],
+                    datasets: [{
+                        data: [35, 45, 31],
+                        backgroundColor: ['#4f46e5', '#7c3aed', '#a855f7']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    animation: {
+                        duration: 2000,
+                        easing: 'easeInOutCubic'
+                    }
+                }
             });
         });
     </script>
